@@ -19,13 +19,13 @@ class ORd:
 
     def __init__(self, state, nao=140, cao=1.8, ko=5.4, flag_ode=True, pstim=0, CL=1000):
         # State variables
-        self.v, self.nai, self.nass, self.ki, self.kss, self.cai, self.cass,
-        self.cansr, self.cajsr, self.m, self.hf, self.hs, self.j, self.sp,
-        self.hsp, self.jp, self.mL, self.hL, self.hLp, self.a, self.iF,
-        self.iS, self.ap, self.iFp, self.iSp, self.d, self.ff, self.fs,
-        self.fcaf, self.fcas, self.fja, self.nca, self.ffp, self.fcafp,
-        self.xrf, self.xrs, self.xs1, self.xs2, self.Jrelnp, self.Jrelp, self.CaMKt = state
-
+        self.v, self.nai, self.nass, self.ki, self.kss, self.cai, self.cass, \
+        self.cansr, self.cajsr, self.m, self.hf, self.hs, self.j, \
+        self.hsp, self.jp, self.mL, self.hL, self.hLp, self.a, self.iF, \
+        self.iS, self.ap, self.iFp, self.iSp, self.d, self.ff, self.fs, \
+        self.fcaf, self.fcas, self.jca, self.nca, self.ffp, self.fcafp, \
+        self.xrf, self.xrs, self.xs1, self.xs2, self.xk1, self.Jrelnp, self.Jrelp, self.CaMKt = state
+        
         self.flag_ode = flag_ode
         self.pstim = pstim
         self.CL = CL
@@ -64,14 +64,14 @@ class ORd:
         self.PKNa = 0.01833
         self.EKs = (self.R * self.T / self.F) * np.log((self.ko + self.PKNa * self.nao) / (self.ki + self.PKNa * self.nai))
 
-        self.KmCamK = 0.15
+        self.KmCaMK = 0.15
         self.aCaMK = 0.05
         self.bCaMK = 0.00068
         self.CaMKo = 0.05
         self.KmCaM = 0.0015
 
-        self.CaMKb = self.CaMKo * (1 - self.CAMkt) / (1 + self.kmCaM / self.cass)
-        self.CaMka = self.CaMkb + self.CaMKt
+        self.CaMKb = self.CaMKo * (1 - self.CaMKt) / (1 + self.KmCaMK / self.cass)
+        self.CaMKa = self.CaMKb + self.CaMKt
 
     def calc_INa(self):
         # INa current
@@ -84,7 +84,7 @@ class ORd:
         Ahs = 1.0 - Ahf
         h = Ahf * self.hf + Ahs * self.hs
         jss = hss
-        tj = 2.038 + 1.0 / (0.02136 * np.exp( - (self.v + 100.6) / 8.281) + 0.3052 * np.exp((v + 0.9941) / 38.45))
+        tj = 2.038 + 1.0 / (0.02136 * np.exp( - (self.v + 100.6) / 8.281) + 0.3052 * np.exp((self.v + 0.9941) / 38.45))
         hssp = 1.0 / (1 + np.exp((self.v + 89.1) / 6.086))
         thsp = 3.0 * ths
         hp = Ahf * self.hf + Ahs * self.hsp
@@ -102,7 +102,7 @@ class ORd:
         return INa
 
     def calc_INaL(self):
-        tmL = 1.0 / (6.765 * np.np.exp((self.self.v + 11.64) / 34.77) + 8.552 * np.np.exp( - (self.self.v + 77.42) / 5.955))
+        tmL = 1.0 / (6.765 * np.exp((self.v + 11.64) / 34.77) + 8.552 * np.exp( - (self.v + 77.42) / 5.955))
         mLss = 1.0 / (1.0 + np.exp((-(self.v + 42.85)) / 5.264))
         hLss = 1.0 / (1.0 + np.exp((self.v + 87.61) / 7.488))
         thL = 200.0
@@ -174,7 +174,7 @@ class ORd:
         km2n = self.jca * 1.0
         anca = 1.0 / (k2n / km2n + (1.0 + Kmn / self.cass)**4.0)
         self.dnca = (anca * k2n - self.nca * km2n)
-        PhiCaL = 4.0 * self.vffrt * (self.cass * np.exp(2.0 * self.vfrt) - 0.341 * cao) / (np.exp(2.0 * self.vfrt) - 1.0)
+        PhiCaL = 4.0 * self.vffrt * (self.cass * np.exp(2.0 * self.vfrt) - 0.341 * self.cao) / (np.exp(2.0 * self.vfrt) - 1.0)
         PhiCaNa = 1.0 * self.vffrt * (0.75 * self.nass * np.exp(1.0 * self.vfrt) - 0.75 * self.nao) / (np.exp(1.0 * self.vfrt) - 1.0)
         PhiCaK = 1.0 * self.vffrt * (0.75 * self.kss * np.exp(1.0 * self.vfrt) - 0.75 * self.ko) / (np.exp(1.0 * self.vfrt) - 1.0)
         PCa = 0.0001
@@ -183,9 +183,9 @@ class ORd:
         PCaK = 3.574e-4 * PCa
         PCaNap = 0.00125 * PCap
         PCaKp = 3.574e-4 * PCap
-        self.dd = (dss - self.d) / td
-        self.dff = (fss - self.ff) / self.tff
-        self.dfs = (fss - self.fs) / self.tfs
+        self.dd = (self.dss - self.d) / td
+        self.dff = (fss - self.ff) / tff
+        self.dfs = (fss - self.fs) / tfs
         self.dfcaf = (fcass - self.fcaf) / tfcaf
         self.dfcas = (fcass - self.fcas) / tfcas
         self.djca = (fcass - self.jca) / tjca
@@ -219,7 +219,7 @@ class ORd:
         rkr = 1.0 / (1.0 + np.exp((self.v + 55.0) / 75.0)) * 1.0 / (1.0 + np.exp((self.v - 10.0) / 30.0))
         GKr = 0.046
 
-        IKr = GKr * np.sqrt(ko / 5.4) * self.xr * self.rkr * (self.v - self.EK)
+        IKr = GKr * np.sqrt(self.ko / 5.4) * xr * rkr * (self.v - self.EK)
         return IKr
 
     def calc_IKs(self):
@@ -227,12 +227,12 @@ class ORd:
         txs1 = 817.3 + 1.0 / (2.326e-4 * np.exp((self.v + 48.28) / 17.80) +
                         0.001292 * np.exp(( - (self.v + 210.0)) / 230.0))
         self.dxs1 = (xs1ss - self.xs1) / txs1
-        txs2 = 1.0 / (0.01 * np.exp((self.v - 50.0) / 20.0) + 0.0193 * np.exp(( - (v + 66.54)) / 31.0))
+        txs2 = 1.0 / (0.01 * np.exp((self.v - 50.0) / 20.0) + 0.0193 * np.exp(( - (self.v + 66.54)) / 31.0))
         self.dxs2 = (xs1ss - self.xs2) / txs2
         KsCa = 1.0 + 0.6 / (1.0 + (3.8e-5 / self.cai)**1.4)
         GKs = 0.0034
 
-        IKs = GKs * self.KsCa * self.xs1 * self.xs2 * (self.v - self.EKs)
+        IKs = GKs * KsCa * self.xs1 * self.xs2 * (self.v - self.EKs)
         return IKs
 
     def calc_IK1(self):
@@ -245,7 +245,7 @@ class ORd:
         IK1 = GK1 * rk1 * self.xk1 * (self.v - self.EK)
         return IK1
 
-    def calc_INaCa(self):
+    def calc_INaCaK(self):
         kna1, kna2, kna3, kasymm = 15.0, 5.0, 88.12, 12.5
         wna, wca, wnaca, self.KmCaAct = 6.0e4, 6.0e4, 5.0e3, 150.0e-6
         kcaon, kcaoff, qna, qca = 1.5e6, 5.0e3, 0.5224, 0.1670
@@ -254,15 +254,18 @@ class ORd:
         hna = np.exp((qna * self.v * self.F) / (self.R * self.T))
 
         # INaCa_i current
-        h1, h2 = 1 + self.nai / kna3 * (1 + hna), (self.nai * hna) / (kna3 * h1)
+        h1 = 1 + self.nai / kna3 * (1 + hna)
+        h2 = (self.nai * hna) / (kna3 * h1)
         h3, h4 = 1.0 / h1, 1.0 + self.nai / kna1 * (1 + self.nai / kna2)
         h5, h6 = self.nai**2 / (h4 * kna1 * kna2), 1.0 / h4
-        h7, h8 = 1.0 + self.nao / kna3 * (1.0 + 1.0 / hna), self.nao / (kna3 * hna * h7)
+        h7 = 1.0 + self.nao / kna3 * (1.0 + 1.0 / hna)
+        h8 = self.nao / (kna3 * hna * h7)
         h9, h10 = 1.0 / h7, kasymm + 1.0 + self.nao / kna1 * (1.0 + self.nao / kna2)
         h11, h12 = self.nao**2 / (h10 * kna1 * kna2), 1.0 / h10
 
         k1, k2, k3p, k3pp = h12 * self.cao * kcaon, kcaoff, h9 * wca, h8 * wnaca
-        k3, k4p, k4pp = k3p + k3pp, h3 * wca / hca, h2 * wnaca, k4p + k4pp
+        k3, k4p, k4pp = k3p + k3pp, h3 * wca / hca, h2 * wnaca
+        k4 = k4p + k4pp
         k5, k6, k7, k8 = kcaoff, h6 * self.cai * kcaon, h5 * h2 * wna, h8 * h11 * wna
 
         x1 = k2 * k4 * (k7 + k6) + k5 * k7 * (k2 + k3)
@@ -316,16 +319,16 @@ class ORd:
         Kki, Kko, MgADP, MgATP = 0.5, 0.3582, 0.05, 9.8
         Kmgatp, H, eP, Khp = 1.698e-7, 1.0e-7, 4.2, 1.698e-7
         Knap, Kxkur = 224.0, 292.0
-        P = eP / (1.0 + H / Khp + nai / Knap + ki / Kxkur)
+        P = eP / (1.0 + H / Khp + self.nai / Knap + self.ki / Kxkur)
 
-        a1 = (k1p * (nai / Knai)**3.0) / ((1.0 + nai / Knai)**3.0 + (1.0 + ki / Kki)**2.0 - 1.0)
+        a1 = (k1p * (self.nai / Knai)**3.0) / ((1.0 + self.nai / Knai)**3.0 + (1.0 + self.ki / Kki)**2.0 - 1.0)
         b1 = k1m * MgADP
         a2 = k2p
         b2 = (k2m * (self.nao / Knao)**3.0) / ((1.0 + self.nao / Knao)**3.0 + (1.0 + self.ko / Kko)**2.0 - 1.0)
         a3 = (k3p * (self.ko / Kko)**2.0) / ((1.0 + self.nao / Knao)**3.0 + (1.0 + self.ko / Kko)**2.0 - 1.0)
         b3 = (k3m * P * H) / (1.0 + MgATP / Kmgatp)
         a4 = (k4p * MgATP / Kmgatp) / (1.0 + MgATP / Kmgatp)
-        b4 = (k4m * (self.ki / Kki)^2.0) / ((1.0 + self.nai / Knai)^3.0 + (1.0 + self.ki / Kki)**2.0 - 1.0)
+        b4 = (k4m * (self.ki / Kki)**2.0) / ((1.0 + self.nai / Knai)**3.0 + (1.0 + self.ki / Kki)**2.0 - 1.0)
 
         x1 = a4 * a1 * a2 + b2 * b4 * b3 + a2 * b4 * b3 + b3 * a1 * a2
         x2 = b2 * b1 * b4 + a1 * a2 * a3 + a3 * b1 * b4 + a2 * a3 * b4
@@ -339,7 +342,7 @@ class ORd:
         zk, JnakNa, JnaKK = 1.0, 3.0 * (E1 * a3-E2 * b3), 2.0 * (E4 * b1-E3 * a1)
         Pnak = 30
 
-        INaK = Pnak * (zna * JnakNa + zk * JnakK)
+        INaK = Pnak * (zna * JnakNa + zk * JnaKK)
 
         return INaCa, INaCa_i, INaCa_ss, INaK
 
@@ -364,14 +367,14 @@ class ORd:
         a_rel = 0.5 * bt
         Jrel_inf = a_rel * ( - ICaL)/ (1.0 + (1.5 / self.cajsr)**8.0)
         tau_rel = bt / (1.0 + 0.0123 / self.cajsr)
-        tau_rel = np.max(tau_rel, 0.001)
+        tau_rel = max(tau_rel, 0.001)
 
         self.dJrelnp = (Jrel_inf - self.Jrelnp) / tau_rel
         btp = 1.25 * bt
         a_relp = 0.5 * btp
-        Jrel_infp = a_relp * (-ICaL) / (1.0 + (1.5 / self.ajsr)**8.0)
+        Jrel_infp = a_relp * (-ICaL) / (1.0 + (1.5 / self.cajsr)**8.0)
         tau_relp = btp / (1.0 + 0.0123 / self.cajsr)
-        tau_relp = np.max(tau_relp, 0.001)
+        tau_rel = max(tau_rel, 0.001)
 
         self.dJrelp = (Jrel_infp - self.Jrelp) / tau_relp
         fJrelp = 1.0 / (1.0 + self.KmCaMK / self.CaMKa)
@@ -388,14 +391,15 @@ class ORd:
 
         return Jup
 
-    def step(self, t, state=None):
-        if state:
-            self.v, self.nai, self.nass, self.ki, self.kss, self.cai, self.cass,
-            self.cansr, self.cajsr, self.m, self.hf, self.hs, self.j, self.sp,
-            self.hsp, self.jp, self.mL, self.hL, self.hLp, self.a, self.iF,
-            self.iS, self.ap, self.iFp, self.iSp, self.d, self.ff, self.fs,
-            self.fcaf, self.fcas, self.fja, self.nca, self.ffp, self.fcafp,
-            self.xrf, self.xrs, self.xs1, self.xs2, self.Jrelnp, self.Jrelp, self.CaMKt = state
+    def step(self, state=None, t=None):
+        assert t is not None
+        if state is not None:
+            self.v, self.nai, self.nass, self.ki, self.kss, self.cai, self.cass, \
+            self.cansr, self.cajsr, self.m, self.hf, self.hs, self.j, \
+            self.hsp, self.jp, self.mL, self.hL, self.hLp, self.a, self.iF, \
+            self.iS, self.ap, self.iFp, self.iSp, self.d, self.ff, self.fs, \
+            self.fcaf, self.fcas, self.jca, self.nca, self.ffp, self.fcafp, \
+            self.xrf, self.xrs, self.xs1, self.xs2, self.xk1, self.Jrelnp, self.Jrelp, self.CaMKt = state
 
         self.vffrt = self.v * self.F**2 / (self.R * self.T)
         self.vfrt = self.v * self.F / (self.R * self.T)
@@ -407,7 +411,7 @@ class ORd:
         IKr = self.calc_IKr()
         IKs = self.calc_IKs()
         IK1 = self.calc_IK1()
-        INaCa, INaCa_i, INaCa_ss, INaK = self.INaCaK()
+        INaCa, INaCa_i, INaCa_ss, INaK = self.calc_INaCaK()
         IKb, INab, ICab, IpCa = self.calc_background_currents()
 
         if self.pstim == 0:  # No stimulation
@@ -430,8 +434,6 @@ class ORd:
             self.dv = 0
 
         if self.flag_ode:
-            self.dCaMKt = self.aCaMK * self.CaMKb * (self.CaMKb + self.CaMKt) - self.bCAMK * self.CaMKt
-
             Jup = self.calc_ca_uptake_intrac_space_SR()
             Jrel = self.calc_ca_release_SR_intrac_space(ICaL)
             # Diffusion Fluxes
@@ -446,7 +448,7 @@ class ORd:
             self.dnass = - (ICaNa + 3.0 * INaCa_ss) * self.Acap /(self.F * self.vss) - JdiffNa
             # [K]i
             self.dki = - (Ito + IKr + IKs + IK1 + IKb + Istim - 2.0 * INaK) * self.Acap /(self.F * self.vmyo) + JdiffK * self.vss / self.vmyo
-            self.dkss = - (ICaK) * self.cap / (self.F * self.vss) - JdiffK
+            self.dkss = - (ICaK) * self.Acap / (self.F * self.vss) - JdiffK
 
             # Calcium Buffers
             cmdnmax = 0.05
@@ -461,7 +463,7 @@ class ORd:
             kmcsqn = 0.8
 
             # [Ca]i
-            Bcai = 1.0 / (1.0 + cmdnmax * kmcmdn /(kmcmdn + cai)**2.0  + trpnmax * kmtrpn /(kmtrpn + self.cai)**2.0)
+            Bcai = 1.0 / (1.0 + cmdnmax * kmcmdn /(kmcmdn + self.cai)**2.0  + trpnmax * kmtrpn /(kmtrpn + self.cai)**2.0)
             self.dcai = Bcai * ( - (IpCa + ICab - 2.0 * INaCa_i) * self.Acap / (2.0 * self.F * self.vmyo) - Jup * self.vnsr / self.vmyo + Jdiff * self.vss / self.vmyo)
             Bcass = 1.0 /(1.0 + BSRmax * KmBSR / (KmBSR + self.cass)**2.0  + BSLmax * KmBSL / (KmBSL + self.cass)**2.0)
             self.dcass = Bcass * ( - (ICaL - 2.0 * INaCa_ss) * self.Acap / (2.0 * self.F * self.vss) + Jrel * self.vjsr / self.vss - Jdiff)
@@ -469,7 +471,9 @@ class ORd:
             Bcajsr = 1.0 / (1.0 + csqnmax * kmcsqn /(kmcsqn + self.cajsr)**2.0)
             self.dcajsr = Bcajsr * (Jtr - Jrel)
 
-            return np.vstack((self.dv, self.dnai, self.dnass, self.dki, self.dkss, self.dcai, self.dcass, self.dcansr, self.dcajsr, self.dm,
+            self.dCaMKt = self.aCaMK * self.CaMKb * (self.CaMKb + self.CaMKt) - self.bCaMK * self.CaMKt
+ 
+            return np.array((self.dv, self.dnai, self.dnass, self.dki, self.dkss, self.dcai, self.dcass, self.dcansr, self.dcajsr, self.dm,
                               self.dhf, self.dhs, self.dj, self.dhsp, self.djp, self.dmL, self.dhL, self.dhLp, self.da, self.diF, self.diS, self.dap,
                               self.diFp, self.diSp, self.dd, self.dff, self.dfs, self.dfcaf, self.dfcas, self.djca, self.dnca, self.dffp, self.dfcafp,
-                              self.dxrf, self.dxrs, self.dxs1, self.dxs2, self.dJrelnp, self.dJrelp, self.dCaMKt))
+                              self.dxrf, self.dxrs, self.dxs1, self.dxs2, self.dxk1, self.dJrelnp, self.dJrelp, self.dCaMKt))
