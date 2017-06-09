@@ -23,12 +23,15 @@ class ORd:
         # State Variables
         for k, v in kwargs:
             setattr(self, k, v)
+
+        self.flag_ode = flag_ode
+        self.pstim = pstim
+        self.CL = CL        
  
         # Extracellular Ionic Concentrations (mM)
-        self.concentrations = {}
-        self.concentrations['nao'] = nao
-        self.concentrations['cao'] = cao
-        self.concentrations['ko'] = ko
+        self.nao = nao
+        self.cao = cao
+        self.ko = ko
 
         # Physical constrants
         self.R = 8314.0  # J/kmol/k
@@ -65,11 +68,8 @@ class ORd:
         self.CaMKo = 0.05
         self.KmCaM = 0.0015
  
-    def update_CaMK(self)
-        # Update CaMK in state
         self.CaMKb = self.CaMKo * (1 - self.CAMkt) / (1 + self.kmCaM / self.cass)
         self.CaMka = self.CaMkb + self.CaMKt
-        self.dCaMKt = self.aCaMK * self.aCaMKb * (self.CaMKb + self.CaMKt) - self.bCAMK * CaMKt
 
     def calc_INa(self):
         # INa current
@@ -98,6 +98,22 @@ class ORd:
         
         INa = GNa * (self.v - self.ENa) * self.m^3.0 * ((1.0 - fINap) * h * self.j + fINap * hp * self.jp)
         return INa
+
+    def calc_INaL(self):
+        tmL = 1.0 / (6.765 * np.exp((self.v + 11.64) / 34.77) + 8.552 * np.exp( - (self.v + 77.42) / 5.955))
+        mLss = 1.0 / (1.0 + exp((-(v + 42.85)) / 5.264))
+        hLss = 1.0 / (1.0 + exp((v + 87.61) / 7.488))
+        thL = 200.0
+        hLssp = 1.0 / (1.0 + exp((v + 93.81) / 7.488))
+        thLp = 3.0 * thL
+        dmL = (mLss - self.mL) / tmL
+        dhL = (hLss - self.hL) / thL
+        dhLp = (hLssp - self.hLp) / thLp
+        GNaL = 0.0075
+        self.fINaLp = (1.0 / (1.0 + self.KmCaMK / self.CaMKa))
+
+        INaL = GNaL * (self.v-self.ENa) * self.mL * ((1.0 - self.fINaLp) * self.hL + self.fINaLp * self./hLp)
+        return INaL
 
     def calc_Ito(self):
         ass = 1.0 / (1.0 + np.exp(( - (self.v - 14.34)) / 14.82))
@@ -269,7 +285,7 @@ class ORd:
         k1, k2, k3, k4 = h12 * self.cao * kcaon, kcaoff, h9 * wca, h8 * wnaca
         k3, k4p, k4pp, k4 = k3p + k3pp, k4p = h3 * wca / hca, h2 * wnaca, k4p + k4pp
         k5, k6, k7, k8 = kcaoff, h6 * self.cass * kcaon, h5 * h2 * wna, h8 * h11 * wna
-        1
+ 
         x1 = k2 * k4 * (k7 + k6) + k5 * k7 * (k2 + k3)
         x2 = k1 * k7 * (k4 + k5) + k4 * k6 * (k1 + k8)
         x3 = k1 * k3 * (k7 + k6) + k8 * k6 * (k2 + k3)
@@ -335,13 +351,24 @@ class ORd:
         ICab = PCab * 4.0 * self.vffrt * (self.cai*np.exp(2.0 * self.vfrt) - 0.341 * self.cao) / (np.exp(2.0 * self.vfrt) - 1.0)
         GpCa = 0.0005
         IpCa = GpCa * self.cai / (0.0005 + cai)
+
         return IKb, INab, ICab, IpCa
+
+    def calc_ca_uptake_intrac_space_SR(self):
+        Jupnp = 0.004375 * self.cai / (self.cai + 0.00092)
+        Jupp = 2.75 * 0.004375 * self.cai / (self.cai + 0.00092 - 0.00017)
+        fJupp = (1.0 / (1.0 + self.KmCaMK / self.CaMKa))
+        Jleak = 0.0039375 * self.cansr / 15.0
+        Jup = ((1.0 - fJupp) * Jupnp + fJupp * Jupp - Jleak)
+
+        return Jup
                          
     def step(self):
         self.vffrt = self.v * self.F**2 / (self.R * self.T)
         self.vfrt = self.v * self.F / (self.R * self.T)
 
         INa = self.calc_INa()
+        INaL = self.calc_INaL()
         Ito = self.calc_Ito()
         ICaL, ICaNa, ICaK = self.calc_ICaL_ICaNa_ICaK()
         IKr = self.calc_IKr()
@@ -349,4 +376,28 @@ class ORd:
         IK1 = self.calc_IK1()
         INaCa, INaK = self.INaCaK()
         IKb, INab, ICab, IpCa = calc_background_currents()
+        jup = calc_ca_uptake_intrac_space_SR()
+
+        if pstim == 0:  # No stimulation
+            Istim = 0
+            self.dv = -(INa + INaL + Ito + ICaL + ICaNa + ICaK + IKr + IKs + IK1 + 
+                        INaCa + INaK + INab + IKb + IpCa + ICab + Istim)
+        elif pstim == 1:  # Current clamp (single Istim current)
+            amp = -53  # uA/uF      
+            duration = 1  # ms
+            trem = t % CL
+            if trem <= duration:
+                Istim = amp
+            else:
+                Istim = 0
+
+            self.dv = -(INa + INaL + Ito + ICaL + ICaNa + ICaK + IKr + IKs + IK1 + 
+                       INaCa + INaK + INab + IKb + IpCa + ICab + Istim)
+        elif pstim == 2:
+            Istim = 0
+            dv = 0
+
+        
+
+        self.dCaMKt = self.aCaMK * self.aCaMKb * (self.CaMKb + self.CaMKt) - self.bCAMK * self.CaMKt
 
