@@ -287,7 +287,55 @@ class ORd:
         INaCa_ss = 0.2 * Gncx * allo * (zna * JncxNa + zca * JncxCa)
         
         INaCa = INaCa_i + INaCa_ss
-        return INaCa
+
+        k1p, k1m, k2p, k2m = 949.5, 182.4, 687.2, 39.4
+        k3p, k3m, k4p, k4m = 1899.0, 79300.0, 639.0, 40.0
+        Knai0, Knao0, delta2 = 9.073, 27.78, -0.1550  
+        Knai = Knai0 * np.exp((delta2 * self.v * self.F) / (3.0 * self.R * self.T))
+        Knao = Knao0 * np.exp(((1.0 - delta2) * self.v * self.F) / (3.0 * self.R * self.T))
+        Kki, Kko, MgADP, MgATP = 0.5, 0.3582, 0.05, 9.8
+        Kmgatp, H, eP, Khp = 1.698e-7, 1.0e-7, 4.2, 1.698e-7   
+        Knap, Kxkur = 224.0, 292.0
+        P = eP / (1.0 + H / Khp + nai / Knap + ki / Kxkur)
+        
+        a1 = (k1p * (nai / Knai)**3.0) / ((1.0 + nai / Knai)**3.0 + (1.0 + ki / Kki)**2.0 - 1.0)
+        b1 = k1m * MgADP
+        a2 = k2p
+        b2 = (k2m * (self.nao / Knao)**3.0) / ((1.0 + self.nao / Knao)**3.0 + (1.0 + self.ko / Kko)**2.0 - 1.0)
+        a3 = (k3p * (self.ko / Kko)**2.0) / ((1.0 + self.nao / Knao)**3.0 + (1.0 + self.ko / Kko)**2.0 - 1.0)
+        b3 = (k3m * P * H) / (1.0 + MgATP / Kmgatp)
+        a4 = (k4p * MgATP / Kmgatp) / (1.0 + MgATP / Kmgatp)
+        b4 = (k4m * (self.ki / Kki)^2.0) / ((1.0 + self.nai / Knai)^3.0 + (1.0 + self.ki / Kki)**2.0 - 1.0)
+        
+        x1 = a4 * a1 * a2 + b2 * b4 * b3 + a2 * b4 * b3 + b3 * a1 * a2
+        x2 = b2 * b1 * b4 + a1 * a2 * a3 + a3 * b1 * b4 + a2 * a3 * b4
+        x3 = a2 * a3 * a4 + b3 * b2 * b1 + b2 * b1 * a4 + a3 * a4 * b1
+        x4 = b4 * b3 * b2 + a3 * a4 * a1 + b2 * a4 * a1 + b3 * b2 * a1
+        
+        E1 = x1 / (x1 + x2 + x3 + x4)
+        E2 = x2 / (x1 + x2 + x3 + x4)
+        E3 = x3 / (x1 + x2 + x3 + x4)
+        E4 = x4 / (x1 + x2 + x3 + x4)
+        zk, JnakNa, JnaKK = 1.0, 3.0 * (E1 * a3-E2 * b3), 2.0 * (E4 * b1-E3 * a1)    
+        Pnak = 30
+
+        INaK = Pnak * (zna * JnakNa + zk * JnakK)
+
+        return INACa, INaK
+
+    def calc_background_currents(self):
+        xkb = 1.0 / (1.0 + np.exp( - (self.v - 14.48) / 18.34))
+        GKb = 0.003
+        IKb = GKb * xkb * (self.v - self.EK)
+
+        PNab = 3.75e-10
+        INab = PNab * self.vffrt * (self.nai * np.exp(self.vfrt) - self.nao) / (np.exp(self.vfrt) - 1.0)
+
+        PCab = 2.5e-8
+        ICab = PCab * 4.0 * self.vffrt * (self.cai*np.exp(2.0 * self.vfrt) - 0.341 * self.cao) / (np.exp(2.0 * self.vfrt) - 1.0)
+        GpCa = 0.0005
+        IpCa = GpCa * self.cai / (0.0005 + cai)
+        return IKb, INab, ICab, IpCa
                          
     def step(self):
         self.vffrt = self.v * self.F**2 / (self.R * self.T)
@@ -299,5 +347,6 @@ class ORd:
         IKr = self.calc_IKr()
         IKs = self.calc_IKs()
         IK1 = self.calc_IK1()
-        INaCa = self.INaCa()
+        INaCa, INaK = self.INaCaK()
+        IKb, INab, ICab, IpCa = calc_background_currents()
 
