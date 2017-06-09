@@ -225,7 +225,70 @@ class ORd:
         GK1 = 0.1908 * 2.3238 * np.sqrt(self.ko / 5.4)
 
         IK1 = GK1 * rk1 * self.xk1 * (self.v - self.EK)
-         
+        return IK1
+
+    def calc_INaCa(self):
+        kna1, kna2, kna3, kasymm = 15.0, 5.0, 88.12, 12.5
+        wna, wca, wnaca, KmCaAct = 6.0e4, 6.0e4, 5.0e3, 150.0e-6
+        kcaon, kcaoff, qna, qca = 1.5e6, 5.0e3, 0.5224, 0.1670
+        zna, Gncx, zca = 1.0, 0.0008, 2.0
+        hca = np.exp((ca * self.v * self.F) / (self.R * self.T))
+        hna = np.exp((qna * self.v * self.F) / (self.R * self.T))
+
+        # INaCa_i current
+        h1, h2 = 1 + self.nai / kna3 * (1 + hna), (self.nai * hna) / (kna3 * h1)
+        h3, h4 = 1.0 / h1, 1.0 + self.nai / kna1 * (1 + self.nai / kna2)
+        h5, h6 = self.nai**2 / (h4 * kna1 * kna2), 1.0 / h4
+        h7, h8 = 1.0 + self.nao / kna3 * (1.0 + 1.0 / hna), self.nao / (kna3 * hna * h7)
+        h9, h10 = 1.0 / h7, kasymm + 1.0 + self.nao / kna1 * (1.0 + self.nao / kna2)
+        h11, h12 = self.nao**2 / (h10 * kna1 * kna2), 1.0 / h10
+        
+        k1, k2, k3p, k3pp = h12 * self.cao * kcaon, kcaoff, h9 * wca, h8 * wnaca      
+        k3, k4p, k4pp = k3p + k3pp, h3 * wca / hca, h2 * wnaca, k4p + k4pp
+        k5, k6, k7, k8 = kcaoff, h6 * self.cai * kcaon, h5 * h2 * wna, h8 * h11 * wna
+        
+        x1 = k2 * k4 * (k7 + k6) + k5 * k7 * (k2 + k3) x2 = k1 * k7 * (k4 + k5) + k4 * k6 * (k1 + k8)
+        x3 = k1 * k3 * (k7 + k6) + k8 * k6 * (k2 + k3) x4 = k2 * k8 * (k4 + k5) + k3 * k5 * (k1 + k8)
+        
+        E1, E2 = x1 / (x1 + x2 + x3 + x4), x2 / (x1 + x2 + x3 + x4)
+        E3, E4 = x3 / (x1 + x2 + x3 + x4), x4 / (x1 + x2 + x3 + x4)
+        
+        allo = 1.0 / (1.0 + (self.KmCaAct / self.cai)**2.0)   
+        JncxNa = 3.0 * (E4 * k7 - E1 * k8) + E3 * k4pp - E2 * k3pp   
+        JncxCa = E2 * k2 - E1 * k1
+ 
+        INaCa_i = 0.8 * Gncx * allo * (zna * JncxNa + zca * JncxCa)
+
+        h1, h2 = 1 + self.nass / kna3 * (1 + hna), (nass * hna) / (kna3 * h1)
+        h3, h4 = 1.0 / h1, 1.0 + nass / kna1 * (1 + nass / kna2)
+        h5, h6 = self.nass**2 / (h4 * kna1 * kna2), 1.0 / h4
+        h7, h8 = 1.0 + self.nao / kna3 * (1.0 + 1.0 / hna), self.nao / (kna3 * hna * h7)
+        h9, h10 = 1.0 / h7, kasymm + 1.0 + self.nao / kna1 * (1 + self.nao / kna2)
+        h11, h12 = self.nao**2 / (h10 * kna1 * kna2), 1.0 / h10
+        
+        k1, k2, k3, k4 = h12 * self.cao * kcaon, kcaoff, h9 * wca, h8 * wnaca
+        k3, k4p, k4pp, k4 = k3p + k3pp, k4p = h3 * wca / hca, h2 * wnaca, k4p + k4pp
+        k5, k6, k7, k8 = kcaoff, h6 * self.cass * kcaon, h5 * h2 * wna, h8 * h11 * wna
+        1
+        x1 = k2 * k4 * (k7 + k6) + k5 * k7 * (k2 + k3)
+        x2 = k1 * k7 * (k4 + k5) + k4 * k6 * (k1 + k8)
+        x3 = k1 * k3 * (k7 + k6) + k8 * k6 * (k2 + k3)
+        x4 = k2 * k8 * (k4 + k5) + k3 * k5 * (k1 + k8)
+        
+        E1 = x1 / (x1 + x2 + x3 + x4)
+        E2 = x2 / (x1 + x2 + x3 + x4)
+        E3 = x3 / (x1 + x2 + x3 + x4)
+        E4 = x4 / (x1 + x2 + x3 + x4)
+        
+        allo = 1.0 / (1.0 + (self.KmCaAct / self.cass)**2.0)
+        JncxNa = 3.0 * (E4 * k7 - E1 * k8) + E3 * k4pp - E2 * k3pp
+        JncxCa = E2 * k2 - E1 * k1
+
+        INaCa_ss = 0.2 * Gncx * allo * (zna * JncxNa + zca * JncxCa)
+        
+        INaCa = INaCa_i + INaCa_ss
+        return INaCa
+                         
     def step(self):
         self.vffrt = self.v * self.F**2 / (self.R * self.T)
         self.vfrt = self.v * self.F / (self.R * self.T)
@@ -236,3 +299,5 @@ class ORd:
         IKr = self.calc_IKr()
         IKs = self.calc_IKs()
         IK1 = self.calc_IK1()
+        INaCa = self.INaCa()
+
