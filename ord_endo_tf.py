@@ -90,9 +90,6 @@ class ORd:
         self.create_step()
         sess.run(tf.global_variables_initializer())
         guarantee_initialized_variables(sess)
-        self.sess = sess
-
-        self.solver_op = tf.contrib.integrate.odeint(self.step, self.state, tf.range(self.CL, dtype=tf.float32)) 
 
     def calc_INa(self):
         # INa current
@@ -215,7 +212,7 @@ class ORd:
         self.fICaLp = (1.0 / (1.0 + self.KmCaMK / self.CaMKa))
 
         # peak CaL (from supplementary mat)
-        ICaLmax  =  PCa * PhiCaL
+        ICaLmax = PCa * PhiCaL
 
         ICaL = ((1.0 - self.fICaLp) * PCa * PhiCaL * self.d * (f * (1.0 - self.nca) + self.jca * fca * self.nca) +
                self.fICaLp * PCap * PhiCaL * self.d * (fp * (1.0 - self.nca) + self.jca * fcap * self.nca))
@@ -413,6 +410,7 @@ class ORd:
         return Jup
 
     def create_step(self):
+        """ Creates the symbolic graph for a single step """
         self.vffrt = self.v * self.F**2 / (self.R * self.T)
         self.vfrt = self.v * self.F / (self.R * self.T)
 
@@ -483,12 +481,7 @@ class ORd:
             self.dCaMKt = self.aCaMK * self.CaMKb * (self.CaMKb + self.CaMKt) - self.bCaMK * self.CaMKt
 
             self.dstates = tf.concat((self.dv, self.dnai, self.dnass, self.dki, self.dkss, self.dcai, self.dcass, self.dcansr, self.dcajsr, self.dm,
-                       self.dhf, self.dhs, self.dj, self.dhsp, self.djp, self.dmL, self.dhL, self.dhLp, self.da, self.diF, self.diS, self.dap,
-                       self.diFp, self.diSp, self.dd, self.dff, self.dfs, self.dfcaf, self.dfcas, self.djca, self.dnca, self.dffp, self.dfcafp,
-                       self.dxrf, self.dxrs, self.dxs1, self.dxs2, self.dxk1, self.dJreltf, self.dJrelp, self.dCaMKt), axis=0)
+                                      self.dhf, self.dhs, self.dj, self.dhsp, self.djp, self.dmL, self.dhL, self.dhLp, self.da, self.diF, self.diS, self.dap,
+                                      self.diFp, self.diSp, self.dd, self.dff, self.dfs, self.dfcaf, self.dfcas, self.djca, self.dnca, self.dffp, self.dfcafp,
+                                      self.dxrf, self.dxrs, self.dxs1, self.dxs2, self.dxk1, self.dJreltf, self.dJrelp, self.dCaMKt), axis=0)
 
-    def step(self, state, t):
-        st = self.state.assign(state)
-        tt = self.t.assign(t)
-        return self.dstates
-     
