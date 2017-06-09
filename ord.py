@@ -19,7 +19,7 @@ from scipy.special import expit as sigmoid
 
 class ORd:
 
-    def __init__(self, nao, cao, ko, **kwargs):
+    def __init__(self, nao=140, cao=1.8, ko=5.4, flag_ode=1, pstim=0, CL=1000, **kwargs):
         # State Variables
         for k, v in kwargs:
             setattr(self, k, v)
