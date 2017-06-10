@@ -3,7 +3,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scipy.integrate import ode, odeint
+from tqdm import tqdm
 
 from ord_endo import ORd
 
@@ -28,14 +28,28 @@ y0 = [v, nai, nass, ki,  kass,
       nca, ffp, fcafp, xrf, xrs,
       xs1, xs2, xk1, Jrelnp,  Jrelp, CaMKt]
 
-y0 = np.array(y0, dtype=np.float32)
-BCL = 25 
+# Number of models to train
+pop_size = 1000000
+y0 = np.tile(np.array(y0).astype(np.float64).reshape(-1, 1), pop_size)
+BCL = 25
 
 print("Solving")
+ord_f = ORd(y0=y0, pstim=1, CL=BCL)
+eps = 50
+sol = np.empty((BCL*eps, pop_size), dtype=np.float64)
+cur_state = y0
+sol[0, :] = cur_state[0, :]
+ts = np.linspace(0, 50, num=BCL*eps, dtype=np.float64)
 st = time.time()
-ord_f = ORd(state=y0, pstim=1)
-sol = odeint(ord_f.step, y0, np.arange(BCL*250))
+for i, t in enumerate(tqdm(ts)):
+    if i == 0:
+        pass
+
+    dt = ord_f.step(cur_state, t)
+    cur_state += dt[0, :, :] / eps
+    sol[i, :] = cur_state[0, :]
+
 print(time.time() - st)
 
-plt.plot(np.arange(BCL*250), sol[:, 0])
+plt.plot(np.arange(BCL*eps), sol[:, 0])
 plt.show()

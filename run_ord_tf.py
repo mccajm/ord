@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy.integrate import odeint
 
-from ord_endo_tf import ORd
+from ord_endo import ORd
 
 
 # Initial Conditions
@@ -38,7 +38,6 @@ BCL = 25
 print("Solving")
 with tf.Session() as sess:
     ord_f = ORd(y0=y0, pstim=1, sess=sess, CL=BCL)
-    writer = tf.summary.FileWriter('/tmp/tensorflow', graph=sess.graph)
     def step(state, t):
         dstates = sess.run([ord_f.dstates], feed_dict={ord_f.t: np.array(t), ord_f.state: state.reshape(-1, 1)})
         return dstates[0].flatten()

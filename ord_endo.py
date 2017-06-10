@@ -7,7 +7,7 @@ http://rudylab.wustl.edu/research/cell/code/AllCodes.html
 Related Journal Paper
 http://www.ncbi.nlm.nih.gov/pubmed/21637795
 
-Converted to TensorFlow by Adam McCarthy
+Converted to NumPy by Adam McCarthy
 """
 
 from math import pi
@@ -17,14 +17,14 @@ import numpy as np
 
 class ORd:
 
-    def __init__(self, state, nao=140, cao=1.8, ko=5.4, flag_ode=True, pstim=0, CL=1000):
+    def __init__(self, y0, nao=140, cao=1.8, ko=5.4, flag_ode=True, pstim=0, CL=1000):
         # State variables
         self.v, self.nai, self.nass, self.ki, self.kss, self.cai, self.cass, \
         self.cansr, self.cajsr, self.m, self.hf, self.hs, self.j, \
         self.hsp, self.jp, self.mL, self.hL, self.hLp, self.a, self.iF, \
         self.iS, self.ap, self.iFp, self.iSp, self.d, self.ff, self.fs, \
         self.fcaf, self.fcas, self.jca, self.nca, self.ffp, self.fcafp, \
-        self.xrf, self.xrs, self.xs1, self.xs2, self.xk1, self.Jrelnp, self.Jrelp, self.CaMKt = state
+        self.xrf, self.xrs, self.xs1, self.xs2, self.xk1, self.Jrelnp, self.Jrelp, self.CaMKt = np.split(y0, y0.shape[0])
         
         self.flag_ode = flag_ode
         self.pstim = pstim
@@ -367,14 +367,14 @@ class ORd:
         a_rel = 0.5 * bt
         Jrel_inf = a_rel * ( - ICaL)/ (1.0 + (1.5 / self.cajsr)**8.0)
         tau_rel = bt / (1.0 + 0.0123 / self.cajsr)
-        tau_rel = max(tau_rel, 0.001)
+        tau_rel = np.maximum(tau_rel, 0.001)
 
         self.dJrelnp = (Jrel_inf - self.Jrelnp) / tau_rel
         btp = 1.25 * bt
         a_relp = 0.5 * btp
         Jrel_infp = a_relp * (-ICaL) / (1.0 + (1.5 / self.cajsr)**8.0)
         tau_relp = btp / (1.0 + 0.0123 / self.cajsr)
-        tau_rel = max(tau_rel, 0.001)
+        tau_rel = np.maximum(tau_rel, 0.001)
 
         self.dJrelp = (Jrel_infp - self.Jrelp) / tau_relp
         fJrelp = 1.0 / (1.0 + self.KmCaMK / self.CaMKa)
@@ -399,7 +399,7 @@ class ORd:
             self.hsp, self.jp, self.mL, self.hL, self.hLp, self.a, self.iF, \
             self.iS, self.ap, self.iFp, self.iSp, self.d, self.ff, self.fs, \
             self.fcaf, self.fcas, self.jca, self.nca, self.ffp, self.fcafp, \
-            self.xrf, self.xrs, self.xs1, self.xs2, self.xk1, self.Jrelnp, self.Jrelp, self.CaMKt = state
+            self.xrf, self.xrs, self.xs1, self.xs2, self.xk1, self.Jrelnp, self.Jrelp, self.CaMKt = np.split(state, state.shape[0])
 
         self.vffrt = self.v * self.F**2 / (self.R * self.T)
         self.vfrt = self.v * self.F / (self.R * self.T)
