@@ -2,8 +2,10 @@ import time
 
 import tensorflow as tf
 import numpy as np
-import matplotlib.pyplot as plt
-
+#import matplotlib.pyplot as plt
+import zarr
+from zarr import blosc
+blosc.set_nthreads(18)
 from tqdm import tqdm
 
 from ord_endo_tf import ORd
@@ -30,7 +32,7 @@ y0 = [v, nai, nass, ki,  kass,
       xs1, xs2, xk1, Jrelnp,  Jrelp, CaMKt]
 
 # Number of models to train
-pop_size = 100000
+pop_size = 10000
 y0 = np.tile(np.array(y0).astype(np.float32).reshape(-1, 1), pop_size)
 BCL = 40
 
@@ -41,9 +43,9 @@ with tf.Session() as sess:
         dstates = sess.run([ord_f.dstates], feed_dict={ord_f.t: np.array(t), ord_f.state: state.reshape(-1, 1)})
         return dstates[0].flatten()
 
-    eps = 50 
-    sol = np.memmap("/mnt/ORD_BCL_50_eps_100.bin", shape=(pop_size*eps*40*10, 41), dtype=np.float32, mode='w+')
-    sol_dt = np.memmap("/mnt/ORD_dt_BCL_50_eps_100.bin", shape=(pop_size*eps*40*10, 41), dtype=np.float32, mode='w+')
+    eps = 50
+    sol = zarr.open_array('/mnt/ORD_BCL_50_eps_100.zarr', mode='w', shape=(pop_size*eps*BCL*10, 42), chunks=(1024, None), dtype='float32', fill_value=0.)
+    sol_dt = zarr.open_array('/mnt/ORD_dt_BCL_50_eps_100.zarr', mode='w', shape=(pop_size*eps*BCL*10, 41), chunks=(1024, None), dtype='float32', fill_value=0.)
     cur_state = y0
     ts = np.linspace(0, BCL*10, num=BCL*10*eps, dtype=np.float32)
     st = time.time()
@@ -53,9 +55,10 @@ with tf.Session() as sess:
         #if i % eps*BCL > 300 and i % 10 != 0:  # We only need high accuracy when near BCL
         #    continue
 
-        sol[k*pop_size:k*pop_size+pop_size, :] = cur_state.swapaxes(0, 1)
-        dt = sess.run([ord_f.dstates], feed_dict={ord_f.t: np.array(t), ord_f.state: cur_state})[0]
+        sol[k*pop_size:k*pop_size+pop_size, :-1] = cur_state.swapaxes(0, 1)
+        dt, Istim = sess.run([ord_f.dstates, ord_f.Istim], feed_dict={ord_f.t: np.array(t), ord_f.state: cur_state})
         cur_state += dt / eps
+        sol[k*pop_size:k*pop_size+pop_size, -1] = Istim.reshape(-1)
 
         sol_dt[k*pop_size:k*pop_size+pop_size, :] = dt.swapaxes(0, 1)
         tq.set_postfix({'dv': dt[0, 0]})
@@ -63,5 +66,5 @@ with tf.Session() as sess:
 
     print(time.time() - st)
 
-plt.plot(np.arange(BCL*eps), sol[:, 0])
-plt.show()
+#plt.plot(np.arange(BCL*eps), sol[:, 0])
+#plt.show()

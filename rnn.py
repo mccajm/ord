@@ -5,7 +5,7 @@ import tensorflow as tf
 from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Lambda
-from keras.optimizers import Adam
+from keras.optimizers import Adam, RMSprop
 import zarr
 from zarr import blosc
 blosc.set_nthreads(18)
@@ -39,24 +39,22 @@ print("Training set", x_train.shape[0])
 print("Test set", x_test.shape[0])
 
 model = Sequential()
-model.add(Dense(2048, kernel_initializer='he_normal', input_shape=(42,)))
+model.add(GRU(128, implementation=2, unroll=True, input_shape=(42,)))
 model.add(LayerNormalization())
-model.add(Activation('relu'))
 for _ in range(4):
-    model.add(Dense(2048, kernel_initializer='he_normal'))
+    model.add(GRU(128, implementation=2, unroll=True))
     model.add(LayerNormalization())
-    model.add(Activation('relu'))
 
 model.add(Dense(41, activation='linear'))
 
-model = make_parallel(model, 3)
+#model = make_parallel(model, 3)
 
 model.summary()
 
 model.compile(loss='mean_squared_error',
-              optimizer=Adam(lr=0.01))
+              optimizer=RMSprop())
 
-checkpointer = ModelCheckpoint(filepath="/tmp/weights.hdf5", verbose=1)  #, save_best_only=True)
+#checkpointer = ModelCheckpoint(filepath="/tmp/weights.hdf5", verbose=1)  #, save_best_only=True)
 history = model.fit(x_train, y_train,
                     batch_size=batch_size,
                     epochs=epochs,

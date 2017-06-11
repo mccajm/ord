@@ -432,24 +432,19 @@ class ORd:
             #amp = tf.constant(-53., dtype=tf.float32)  # uA/uF
             #duration = tf.constant(1., dtype=tf.float32)  # ms
             #trem = tf.squeeze(self.t) % eps 
-            Istim = tf.zeros_like(INa)
-            #stim_val = tf.random_uniform((40, 8,), minval=-70, maxval=-20, dtype=np.float32)
-            stim_val = np.random.uniform(-70, -10, (Istim.shape[1], 80))
-            stim = np.zeros((400, Istim.shape[1]), dtype=np.float32)
-            for i in range(Istim.shape[1]):
-                times = np.random.random_integers(0, 399, 80)
-                stim[times, i] = stim_val[i, :]
+            stim_val = np.random.uniform(-70, -10, (INa.shape[1], 80))
+            times = np.random.random_integers(0, 399, (INa.shape[1], 80))
+            stim = np.zeros((400, INa.shape[1]), dtype=np.float32)
+            for i in range(INa.shape[1]):
+                stim[times[i, :], i] = stim_val[i, :]
 
-            #stim_pos = tf.random_uniform((40, 8,), minval=0, maxval=Istim.shape[1]-1, dtype=np.int32)
             int_t = tf.to_int32(self.t)
-            stim_val_now = tf.gather(stim, int_t)
-            Istim = tf.Variable(tf.squeeze(Istim))
-            Istim = Istim + stim_val_now
+            Istim = tf.gather(stim, int_t)
             Istim = tf.reshape(Istim, [1, -1])
-            #Istim = tf.negative(Istim)
 
             self.dv = -(INa + INaL + Ito + ICaL + ICaNa + ICaK + IKr + IKs + IK1 +
                        INaCa + INaK + INab + IKb + IpCa + ICab + Istim)
+            self.Istim = Istim
         elif self.pstim == 2:
             Istim = 0.
             self.dv = 0.
