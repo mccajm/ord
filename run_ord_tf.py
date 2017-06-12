@@ -32,7 +32,7 @@ y0 = [v, nai, nass, ki,  kass,
       xs1, xs2, xk1, Jrelnp,  Jrelp, CaMKt]
 
 # Number of models to train
-pop_size = 10000
+pop_size = 100000
 y0 = np.tile(np.array(y0).astype(np.float32).reshape(-1, 1), pop_size)
 BCL = 40
 
@@ -44,8 +44,8 @@ with tf.Session() as sess:
         return dstates[0].flatten()
 
     eps = 50
-    sol = zarr.open_array('/mnt/ORD_BCL_50_eps_100.zarr', mode='w', shape=(pop_size*eps*BCL*10, 42), chunks=(1024, None), dtype='float32', fill_value=0.)
-    sol_dt = zarr.open_array('/mnt/ORD_dt_BCL_50_eps_100.zarr', mode='w', shape=(pop_size*eps*BCL*10, 41), chunks=(1024, None), dtype='float32', fill_value=0.)
+    sol = zarr.open_array('/mnt/ORD_BCL_50_eps_100_1000000.zarr', mode='w', shape=(pop_size*eps*BCL*10, 42), chunks=(1024, None), dtype='float32', fill_value=0.)
+    sol_dt = zarr.open_array('/mnt/ORD_dt_BCL_50_eps_1000000.zarr', mode='w', shape=(pop_size*eps*BCL*10, 41), chunks=(1024, None), dtype='float32', fill_value=0.)
     cur_state = y0
     ts = np.linspace(0, BCL*10, num=BCL*10*eps, dtype=np.float32)
     st = time.time()
