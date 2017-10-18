@@ -44,23 +44,20 @@ with tf.Session() as sess:
         return dstates[0].flatten()
 
     eps = 50
-    sol = zarr.open_array('/mnt/ORD_BCL_50_eps_100_1000000.zarr', mode='w', shape=(pop_size*eps*BCL*10, 42), chunks=(1024, None), dtype='float32', fill_value=0.)
-    sol_dt = zarr.open_array('/mnt/ORD_dt_BCL_50_eps_1000000.zarr', mode='w', shape=(pop_size*eps*BCL*10, 41), chunks=(1024, None), dtype='float32', fill_value=0.)
+    #sol = zarr.open_array('/mnt/ORD_BCL_50_eps_100_1000000.zarr', mode='w', shape=(pop_size*eps*BCL*10, 42), chunks=(1024, None), dtype='float32', fill_value=0.)
+    #sol_dt = zarr.open_array('/mnt/ORD_dt_BCL_50_eps_1000000.zarr', mode='w', shape=(pop_size*eps*BCL*10, 41), chunks=(1024, None), dtype='float32', fill_value=0.)
     cur_state = y0
     ts = np.linspace(0, BCL*10, num=BCL*10*eps, dtype=np.float32)
     st = time.time()
     tq = tqdm(ts)
     k = 0
     for i, t in enumerate(tq):
-        #if i % eps*BCL > 300 and i % 10 != 0:  # We only need high accuracy when near BCL
-        #    continue
-
-        sol[k*pop_size:k*pop_size+pop_size, :-1] = cur_state.swapaxes(0, 1)
+        #sol[k*pop_size:k*pop_size+pop_size, :-1] = cur_state.swapaxes(0, 1)
         dt, Istim = sess.run([ord_f.dstates, ord_f.Istim], feed_dict={ord_f.t: np.array(t), ord_f.state: cur_state})
         cur_state += dt / eps
-        sol[k*pop_size:k*pop_size+pop_size, -1] = Istim.reshape(-1)
+        #sol[k*pop_size:k*pop_size+pop_size, -1] = Istim.reshape(-1)
 
-        sol_dt[k*pop_size:k*pop_size+pop_size, :] = dt.swapaxes(0, 1)
+        #sol_dt[k*pop_size:k*pop_size+pop_size, :] = dt.swapaxes(0, 1)
         tq.set_postfix({'dv': dt[0, 0]})
         k += 1
 
